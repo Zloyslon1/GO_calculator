@@ -1,50 +1,32 @@
-# Привет! Это мой простейший калькулятор в рамках первого пет-проекта
+# Калькулятор на Go
 
-## Обо мне
-Я начинающий разработчик на **Go** (звездочки делают жирным).
-Учусь писать чистый код и использовать Git.
+Консольный калькулятор: читает из stdin два числа и знак операции, печатает
+результат. Первый проект на Go — знакомство с языком, `switch` и обработкой
+некорректного ввода.
 
-### Мои навыки:
-- Go (Golang)
-- VS Code
-- Терминал
+![Go](https://img.shields.io/badge/Go-1.x-00ADD8?logo=go&logoColor=white)
 
-### Пример моего кода:
+## Что умеет
 
-```go
-package main
+Операции `+`, `-`, `*`, `/`, `%`. Деление и остаток от деления на ноль
+перехватываются и не роняют программу, неизвестная операция сообщается явно.
 
-import (
-	"fmt"
-)
+## Запуск
 
-func main() {
-	var a, b float32
-	var operator string
-	fmt.Scan(&a, &b, &operator)
-	switch operator {
-	case "+":
-		fmt.Println(a + b)
-	case "-":
-		fmt.Println(a - b)
-	case "*":
-		fmt.Println(a * b)
-	case "/":
-		if b != 0 {
-			fmt.Println(a / b)
-		} else {
-			fmt.Println("Делить на ноль нельзя!")
-		}
-	case "%":
-		if b != 0 {
-			fmt.Println(float32(int(a) % int(b)))
-		} else {
-			fmt.Println("Делить на ноль нельзя!")
-		}
-	default:
-		fmt.Println("Неизвестная операция")
-
-	}
-}
+```bash
+go run main.go
 ```
 
+Ввод — три значения через пробел или перенос строки:
+
+```
+12 4 /
+3
+```
+
+Сборка бинарника:
+
+```bash
+go build -o calculator main.go
+./calculator
+```

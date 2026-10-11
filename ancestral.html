@@ -62,6 +62,8 @@
     margin-bottom: 14px;
   }
   input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  input[type=text].invalid, input[type=text].invalid:focus { outline-color: #b3261e; border-color: #b3261e; }
+  @media (prefers-color-scheme: dark) { input[type=text].invalid, input[type=text].invalid:focus { outline-color: #ff8a80; border-color: #ff8a80; } }
   button {
     font: inherit;
     font-weight: 600;
@@ -139,7 +141,7 @@
     <input type="text" id="fio" placeholder="Иванова Лариса Петровна" autocapitalize="words">
 
     <label for="date">Дата рождения</label>
-    <input type="text" id="date" inputmode="numeric" placeholder="ДД.ММ.ГГГГ" maxlength="10">
+    <input type="text" id="date" inputmode="numeric" placeholder="ДД.ММ.ГГГГ" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-describedby="err" aria-invalid="false">
     <div class="error" id="err" role="alert" hidden></div>
 
     <button type="submit">Рассчитать</button>
@@ -275,6 +277,66 @@ function gridCells(r) {
   }
   return out;
 }
+
+// Разбор того, что набрано в поле даты. Понимает просто цифры (27012000),
+// точки, слэши, дефисы и пробелы, а также дату с годом впереди (2000-01-27).
+// Возвращает:
+//   text     — дата с точками: 27.01.2000 (день 4–9 и месяц 2–9 дополняются нулём);
+//   pos[k]   — место курсора в text после k-й набранной цифры;
+//   day, month, year — числа, когда дата введена целиком;
+//   complete — дата введена целиком и такая дата существует;
+//   error    — понятное сообщение, если уже видно, что дата неверная ("" если всё в порядке).
+function parseDateInput(raw) {
+  var s = String(raw);
+  var iso = /^\s*(\d{4})\D+(\d{1,2})\D+(\d{1,2})\s*$/.exec(s);
+  if (iso) s = ("0" + iso[3]).slice(-2) + ("0" + iso[2]).slice(-2) + iso[1];
+  var d = s.replace(/\D/g, "");
+
+  var out = "", pos = [0], i = 0;
+  var groups = ["", "", ""];
+  // Берёт из набранных цифр день или месяц: first — наибольшая первая цифра без нуля.
+  function take(idx, firstMax) {
+    if (i >= d.length) return false;
+    var a = d.charAt(i);
+    if (+a > firstMax) {
+      groups[idx] = "0" + a; out += "0" + a; i += 1; pos[i] = out.length;
+    } else if (i + 1 < d.length) {
+      groups[idx] = a + d.charAt(i + 1); out += groups[idx];
+      pos[i + 1] = out.length - 1; i += 2; pos[i] = out.length;
+    } else {
+      groups[idx] = a; out += a; i += 1; pos[i] = out.length;
+      return false;
+    }
+    return true;
+  }
+  if (take(0, 3) && i < d.length) {
+    out += ".";
+    if (take(1, 1) && i < d.length) {
+      out += ".";
+      groups[2] = d.slice(i, i + 4);
+      for (var k = 0; k < groups[2].length; k++) { out += groups[2].charAt(k); pos[i + 1] = out.length; i += 1; }
+    }
+  }
+
+  var res = { text: out, pos: pos, day: 0, month: 0, year: 0, complete: false, error: "" };
+  var ds = groups[0], ms = groups[1], ys = groups[2];
+  if (ds.length === 2 && (+ds < 1 || +ds > 31)) { res.error = "День — от 01 до 31"; return res; }
+  if (ms.length === 2 && (+ms < 1 || +ms > 12)) { res.error = "Месяц — от 01 до 12"; return res; }
+  if (ys.length > 0) {
+    var scale = Math.pow(10, 4 - ys.length), lo = +ys * scale, hi = lo + scale - 1;
+    if (hi < 1800 || lo > 2099) { res.error = "Год — от 1800 до 2099"; return res; }
+  }
+  var maxDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (ds.length === 2 && ms.length === 2 && +ds > maxDays[+ms - 1]) { res.error = "Такой даты не существует"; return res; }
+  if (ds.length === 2 && ms.length === 2 && ys.length === 4) {
+    var dt = new Date(+ys, +ms - 1, +ds);
+    if (dt.getFullYear() !== +ys || dt.getMonth() !== +ms - 1 || dt.getDate() !== +ds) {
+      res.error = "Такой даты не существует"; return res;
+    }
+    res.day = +ds; res.month = +ms; res.year = +ys; res.complete = true;
+  }
+  return res;
+}
 // CALC-END
 
 (function () {
@@ -282,20 +344,38 @@ function gridCells(r) {
   var dateEl = $("date");
   var lastText = "";
 
-  // Подставляем точки при вводе: 01121983 -> 01.12.1983
-  dateEl.addEventListener("input", function () {
-    var v = dateEl.value.replace(/\D/g, "").slice(0, 8);
-    var out = v;
-    if (v.length > 4) out = v.slice(0, 2) + "." + v.slice(2, 4) + "." + v.slice(4);
-    else if (v.length > 2) out = v.slice(0, 2) + "." + v.slice(2);
-    dateEl.value = out;
-  });
-
   function showError(msg) {
     var e = $("err");
     e.textContent = msg;
     e.hidden = !msg;
+    dateEl.classList.toggle("invalid", !!msg);
+    dateEl.setAttribute("aria-invalid", msg ? "true" : "false");
   }
+
+  function setCaret(at) {
+    try { dateEl.setSelectionRange(at, at); } catch (e) {}
+  }
+
+  // Ставим точки и проверяем дату прямо при вводе: 27012000 -> 27.01.2000.
+  // Поле переписываем только если текст действительно изменился, иначе на
+  // некоторых телефонах клавиатура сбрасывает набор или уводит курсор.
+  dateEl.addEventListener("input", function () {
+    var raw = dateEl.value;
+    var caret = dateEl.selectionStart;
+    var p = parseDateInput(raw);
+    if (p.text !== raw) {
+      var atEnd = caret == null || caret >= raw.length;
+      var k = atEnd ? 0 : raw.slice(0, caret).replace(/\D/g, "").length;
+      var at = atEnd ? p.text.length : p.pos[Math.min(k, p.pos.length - 1)];
+      dateEl.value = p.text;
+      if (document.activeElement === dateEl) {
+        setCaret(at);
+        // Для клавиатур Android: повторяем, но только если поле с тех пор не менялось.
+        setTimeout(function () { if (dateEl.value === p.text) setCaret(at); }, 0);
+      }
+    }
+    showError(p.error);
+  });
 
   var FIN_LEVEL = { 0: "негативной программы нет", 1: "наименьшее", 2: "среднее", 3: "высокое" };
 
@@ -403,13 +483,11 @@ function gridCells(r) {
   $("form").addEventListener("submit", function (ev) {
     ev.preventDefault();
     showError("");
-    var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(dateEl.value.trim());
-    if (!m) { showError("Введите дату в виде ДД.ММ.ГГГГ"); return; }
-    var day = +m[1], month = +m[2], year = +m[3];
-    var check = new Date(year, month - 1, day);
-    if (check.getFullYear() !== year || check.getMonth() !== month - 1 || check.getDate() !== day) {
-      showError("Такой даты не существует"); return;
-    }
+    var p = parseDateInput(dateEl.value);
+    if (p.error) { showError(p.error); return; }
+    if (!p.complete) { showError("Введите дату полностью: ДД.ММ.ГГГГ"); return; }
+    if (dateEl.value !== p.text) dateEl.value = p.text;
+    var day = p.day, month = p.month, year = p.year;
     var r;
     try { r = calc(day, month, year); } catch (e) { showError(e.message); return; }
 

@@ -124,6 +124,7 @@
     font-variant-numeric: tabular-nums; letter-spacing: 1px;
   }
   .fin-tag.empty { background: transparent; color: var(--muted); border: 1px dashed var(--line); letter-spacing: 0; }
+  .boot { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 12px 14px; font-size: 15px; margin: 0 0 14px; }
   .fin-summary { border-left: 3px solid var(--accent); background: var(--soft); border-radius: 0 10px 10px 0; padding: 12px 14px; margin-top: 16px; }
   .fin-summary h3 { font-size: 14px; margin: 0 0 6px; color: var(--accent); }
   .fin-summary p { margin: 0 0 6px; font-size: 15px; line-height: 1.4; }
@@ -136,7 +137,26 @@
   <h1>Ансестологическая карта</h1>
   <p class="sub">Работает без интернета. Всё считается прямо на телефоне.</p>
 
-  <form class="panel" id="form" autocomplete="off">
+  <!-- Виден, пока скрипт не запустился: если вы видите это сообщение, расчёт не работает. -->
+  <div class="boot" id="boot" role="alert">
+    Расчёт не запустился. Скорее всего, файл открыт во встроенном просмотрщике
+    (в мессенджере, в «Файлах» или в приложении), который не выполняет скрипты.
+    Откройте файл в обычном браузере — Chrome или Safari.
+  </div>
+  <script>
+  // Если в странице случится ошибка, показываем её текст на экране.
+  window.onerror = function (msg, src, line) {
+    var b = document.getElementById("boot");
+    if (b) {
+      b.hidden = false;
+      b.textContent = "Ошибка в странице: " + msg + (line ? " (строка " + line + ")" : "") +
+        ". Сделайте скриншот и пришлите его.";
+    }
+    return false;
+  };
+  </script>
+
+  <form class="panel" id="form" method="dialog" onsubmit="return false" autocomplete="off">
     <label for="fio">ФИО (по желанию)</label>
     <input type="text" id="fio" placeholder="Иванова Лариса Петровна" autocapitalize="words">
 
@@ -535,6 +555,9 @@ function parseDateInput(raw) {
       navigator.clipboard.writeText(lastText).then(done, fallback);
     } else { fallback(); }
   });
+
+  // Дошли до конца — значит, скрипт работает: убираем предупреждение.
+  $("boot").hidden = true;
 })();
 </script>
 </body>

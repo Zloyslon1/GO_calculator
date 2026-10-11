@@ -136,3 +136,73 @@ func TestOutOfRange(t *testing.T) {
 		}
 	}
 }
+
+// Пример из урока модуля 3 «Родовой финансовый канал»: дата 15.08.2001,
+// карта 1111/-/7, 2/5/88, 3/6/99. В финансовом канале две цифры (5 и 6),
+// значит устойчивый, но слабый канал с двумя точками входа, и нет цифры 4.
+func TestFinanceFromCourse(t *testing.T) {
+	r, err := Calc(d(15, 8, 2001))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := r.Finance()
+	if f.Count4 != 0 || f.Count5 != 1 || f.Count6 != 1 {
+		t.Fatalf("цифры канала: 4×%d 5×%d 6×%d, ждали 4×0 5×1 6×1", f.Count4, f.Count5, f.Count6)
+	}
+	if f.Total != 2 {
+		t.Errorf("всего цифр в канале %d, ждали 2", f.Total)
+	}
+	if !f.Stable {
+		t.Error("канал из 2 цифр должен быть устойчивым")
+	}
+	if f.Ideal {
+		t.Error("канал из 2 цифр не идеальный")
+	}
+	if f.Level != 2 {
+		t.Errorf("степень влияния %d, ждали 2 (средняя)", f.Level)
+	}
+	if len(f.Entries) != 2 {
+		t.Errorf("точек входа %d, ждали 2", len(f.Entries))
+	}
+	if len(f.Missing) != 1 || f.Missing[0].Digit != 4 {
+		t.Errorf("не хватать должно только цифры 4, получили %+v", f.Missing)
+	}
+}
+
+// Классификация модели канала по количеству цифр 4, 5, 6.
+func TestFinanceModels(t *testing.T) {
+	tests := []struct {
+		name           string
+		date           time.Time
+		total          int
+		stable, ideal  bool
+		level, entries int
+	}{
+		// 01.12.1983: карта 111/-/7, 222/55/8, 33/-/9 → канал только 55 (две 5).
+		{"две цифры в одной ячейке", d(1, 12, 1983), 2, true, false, 2, 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r, err := Calc(tt.date)
+			if err != nil {
+				t.Fatal(err)
+			}
+			f := r.Finance()
+			if f.Total != tt.total {
+				t.Errorf("всего цифр %d, ждали %d", f.Total, tt.total)
+			}
+			if f.Stable != tt.stable {
+				t.Errorf("устойчивость %v, ждали %v", f.Stable, tt.stable)
+			}
+			if f.Ideal != tt.ideal {
+				t.Errorf("идеальность %v, ждали %v", f.Ideal, tt.ideal)
+			}
+			if f.Level != tt.level {
+				t.Errorf("уровень %d, ждали %d", f.Level, tt.level)
+			}
+			if len(f.Entries) != tt.entries {
+				t.Errorf("точек входа %d, ждали %d", len(f.Entries), tt.entries)
+			}
+		})
+	}
+}

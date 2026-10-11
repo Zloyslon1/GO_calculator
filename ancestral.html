@@ -110,6 +110,18 @@
   .note { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 12px; font-size: 15px; margin-top: 12px; }
   .soon { color: var(--muted); font-size: 15px; margin: 0; }
   h2 { font-size: 16px; margin: 0 0 8px; }
+  .fin-sub { color: var(--muted); font-size: 14px; margin: 0 0 10px; }
+  .fin-model { background: var(--soft); border-radius: 10px; padding: 10px 12px; font-size: 15px; margin: 10px 0 4px; }
+  .fin-head { font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
+  .fin-item { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .fin-item:last-child { border-bottom: 0; }
+  .fin-tag {
+    flex: 0 0 auto; min-width: 42px; text-align: center;
+    background: var(--accent); color: var(--accent-ink);
+    border-radius: 8px; padding: 3px 8px; font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: 1px;
+  }
+  .fin-tag.empty { background: transparent; color: var(--muted); border: 1px dashed var(--line); letter-spacing: 0; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -145,9 +157,15 @@
       <button class="ghost" type="button" id="copy">Скопировать результат</button>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="finPanel">
       <h2>Финансовый канал</h2>
-      <p class="soon">Пока не подключён: правила расчёта нужно взять из курса.</p>
+      <p class="fin-sub">Столбец «Деньги» — цифры 4, 5, 6. Канал представляют домом: 4 — крыша, 5 — стены, 6 — фундамент.</p>
+      <div class="row"><span>Цифр в канале</span><b id="finTotal"></b></div>
+      <div class="row"><span>Модель канала</span><b id="finStable"></b></div>
+      <div class="row"><span>Влияние программ рода</span><b id="finLevel"></b></div>
+      <p class="fin-model" id="finModel"></p>
+      <div id="finEntries"></div>
+      <div id="finMissing"></div>
     </div>
   </section>
 </main>
@@ -197,6 +215,44 @@ function calc(day, month, year) {
   return { working: working, chrp: n2, counts: counts, extraNine: extraNine, at21: at21 };
 }
 
+// Финансовый канал — цифры 4, 5, 6 (столбец «Деньги»). Правила из модуля 3,
+// урок «Родовой финансовый канал». 4 — крыша, 5 — стены, 6 — фундамент.
+// Сила и устойчивость зависят от того, сколько всего цифр 4, 5, 6 в карте,
+// точки входа — от того, какие ячейки заполнены. Считается только по дате.
+var FIN_PART = { 4: "крыша", 5: "стены", 6: "фундамент" };
+var FIN_ENTRY = {
+  4: "тело и физические возможности: спорт, бьюти, телесные практики, медитации",
+  5: "общение и сообщество: торговля, посредничество, право, блогерство",
+  6: "труд и мастерство: экспертиза, работа с ресурсами, бухгалтерия"
+};
+var FIN_MISSING = {
+  4: "заняться физическим и ментальным здоровьем: ЗОЖ, лёгкие нагрузки, медитации",
+  5: "проявляться в социуме: сообщество, общение, блогерство",
+  6: "больше трудиться"
+};
+function finance(counts) {
+  var c4 = counts[4], c5 = counts[5], c6 = counts[6];
+  var total = c4 + c5 + c6;
+  var all = c4 > 0 && c5 > 0 && c6 > 0;
+  var entries = [], missing = [];
+  [4, 5, 6].forEach(function (d) {
+    if (counts[d] > 0) entries.push({ digit: d, count: counts[d], part: FIN_PART[d], hint: FIN_ENTRY[d] });
+    else missing.push({ digit: d, part: FIN_PART[d], hint: FIN_MISSING[d] });
+  });
+  var stable = total === 2 || total === 4;
+  var ideal = total === 4 && all;
+  var level = total === 4 ? 0 : total === 3 ? 1 : total === 2 ? 2 : 3;
+  var model;
+  if (total === 0) model = "Пустой финансовый канал: деньги даются тяжело, их нужно нарабатывать";
+  else if (total === 1) model = "Очень слабый, неустойчивый канал: нужен постоянный «допинг» и много усилий";
+  else if (total === 2) model = "Устойчивый, но слабый канал: средний достаток";
+  else if (total === 3) model = "Неустойчивый канал («заработал — потерял»), но человек хорошо зарабатывает";
+  else if (ideal) model = "Идеальный, донорский канал: устойчивый и полный";
+  else if (total === 4) model = "Четыре цифры, но с перекосом: одна из ячеек пустует";
+  else model = "Перегруженный канал: считается как пустой";
+  return { c4: c4, c5: c5, c6: c6, total: total, stable: stable, ideal: ideal, level: level, model: model, entries: entries, missing: missing };
+}
+
 // Карта по строкам: 1 4 7 / 2 5 8 / 3 6 9
 function gridCells(r) {
   var out = [];
@@ -236,6 +292,74 @@ function gridCells(r) {
     e.hidden = !msg;
   }
 
+  var FIN_LEVEL = { 0: "негативной программы нет", 1: "наименьшее", 2: "среднее", 3: "высокое" };
+
+  function finItem(tag, part, hint, empty) {
+    var row = document.createElement("div");
+    row.className = "fin-item";
+    var t = document.createElement("span");
+    t.className = "fin-tag" + (empty ? " empty" : "");
+    t.textContent = tag;
+    var txt = document.createElement("span");
+    var b = document.createElement("b");
+    b.textContent = part;
+    txt.appendChild(b);
+    txt.appendChild(document.createTextNode(" — " + hint));
+    row.appendChild(t);
+    row.appendChild(txt);
+    return row;
+  }
+
+  function renderFinance(fin) {
+    $("finTotal").textContent = fin.total + " (4×" + fin.c4 + ", 5×" + fin.c5 + ", 6×" + fin.c6 + ")";
+    $("finStable").textContent = fin.stable ? "устойчивая" : "неустойчивая";
+    $("finLevel").textContent = FIN_LEVEL[fin.level];
+    $("finModel").textContent = fin.model;
+
+    var e = $("finEntries");
+    e.textContent = "";
+    if (fin.entries.length) {
+      var h = document.createElement("div");
+      h.className = "fin-head";
+      h.textContent = "Точки входа (" + fin.entries.length + ") — через что легче приходят деньги:";
+      e.appendChild(h);
+      fin.entries.forEach(function (x) {
+        e.appendChild(finItem(String(x.digit).repeat(x.count), x.part, x.hint, false));
+      });
+    }
+
+    var m = $("finMissing");
+    m.textContent = "";
+    if (fin.missing.length) {
+      var h2 = document.createElement("div");
+      h2.className = "fin-head";
+      h2.textContent = "Чего не хватает — что нарабатывать:";
+      m.appendChild(h2);
+      fin.missing.forEach(function (x) {
+        m.appendChild(finItem("нет " + x.digit, x.part, x.hint, true));
+      });
+    }
+  }
+
+  // Тот же разбор финансового канала в виде текста — для кнопки «Скопировать».
+  function financeText(fin) {
+    var out = "Финансовый канал (4,5,6): " + fin.total + " цифр(ы) — " +
+      (fin.stable ? "устойчивый" : "неустойчивый") + "\n" + fin.model;
+    if (fin.entries.length) {
+      out += "\nТочки входа:";
+      fin.entries.forEach(function (x) {
+        out += "\n  " + String(x.digit).repeat(x.count) + " (" + x.part + ") — " + x.hint;
+      });
+    }
+    if (fin.missing.length) {
+      out += "\nНарабатывать:";
+      fin.missing.forEach(function (x) {
+        out += "\n  нет " + x.digit + " (" + x.part + ") — " + x.hint;
+      });
+    }
+    return out;
+  }
+
   $("form").addEventListener("submit", function (ev) {
     ev.preventDefault();
     showError("");
@@ -268,11 +392,15 @@ function gridCells(r) {
       d.textContent = t;
       grid.appendChild(d);
     });
+
+    var fin = finance(r.counts);
+    renderFinance(fin);
     $("result").hidden = false;
 
     lastText = (fio ? fio + "\n" : "") + dateEl.value + "\n" + work + "\n" +
       "ЧРП: " + r.chrp + "\n\n" +
-      [0, 1, 2].map(function (i) { return cells.slice(i * 3, i * 3 + 3).join("   "); }).join("\n");
+      [0, 1, 2].map(function (i) { return cells.slice(i * 3, i * 3 + 3).join("   "); }).join("\n") +
+      "\n\n" + financeText(fin);
     $("result").scrollIntoView({ behavior: "smooth", block: "start" });
   });
 

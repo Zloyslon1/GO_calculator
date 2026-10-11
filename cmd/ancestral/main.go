@@ -50,4 +50,39 @@ func main() {
 		fmt.Println()
 		fmt.Println("После 21 года к цифрам добавится по одной (кроме 5), описывать карту нужно без них.")
 	}
+
+	printFinance(res.Finance())
+}
+
+func printFinance(f ancestral.Finance) {
+	fmt.Println()
+	fmt.Println("Финансовый канал (цифры 4, 5, 6 — столбец «Деньги»):")
+	fmt.Printf("  Цифр в канале: %d  (4×%d, 5×%d, 6×%d)\n", f.Total, f.Count4, f.Count5, f.Count6)
+	fmt.Println("  " + f.Model)
+
+	stab := "неустойчивый"
+	if f.Stable {
+		stab = "устойчивый"
+	}
+	levels := map[int]string{
+		0: "негативной денежной программы нет",
+		1: "наименьшая",
+		2: "средняя",
+		3: "высокая",
+	}
+	fmt.Printf("  Модель: %s. Влияние родовых программ: %s.\n", stab, levels[f.Level])
+
+	if len(f.Entries) > 0 {
+		fmt.Printf("  Точки входа (%d):\n", len(f.Entries))
+		for _, e := range f.Entries {
+			digits := strings.Repeat(fmt.Sprint(e.Digit), e.Count)
+			fmt.Printf("    %-5s (%s) — %s\n", digits, e.Part, e.Hint)
+		}
+	}
+	if len(f.Missing) > 0 {
+		fmt.Println("  Чего не хватает (что нарабатывать):")
+		for _, m := range f.Missing {
+			fmt.Printf("    нет %d (%s) — %s\n", m.Digit, m.Part, m.Hint)
+		}
+	}
 }

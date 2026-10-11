@@ -122,6 +122,10 @@
     font-variant-numeric: tabular-nums; letter-spacing: 1px;
   }
   .fin-tag.empty { background: transparent; color: var(--muted); border: 1px dashed var(--line); letter-spacing: 0; }
+  .fin-summary { border-left: 3px solid var(--accent); background: var(--soft); border-radius: 0 10px 10px 0; padding: 12px 14px; margin-top: 16px; }
+  .fin-summary h3 { font-size: 14px; margin: 0 0 6px; color: var(--accent); }
+  .fin-summary p { margin: 0 0 6px; font-size: 15px; line-height: 1.4; }
+  .fin-summary p:last-child { margin-bottom: 0; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -166,6 +170,7 @@
       <p class="fin-model" id="finModel"></p>
       <div id="finEntries"></div>
       <div id="finMissing"></div>
+      <div class="fin-summary" id="finSummary"></div>
     </div>
   </section>
 </main>
@@ -294,6 +299,29 @@ function gridCells(r) {
 
   var FIN_LEVEL = { 0: "негативной программы нет", 1: "наименьшее", 2: "среднее", 3: "высокое" };
 
+  // Короткое объяснение простыми словами.
+  var FIN_PLAIN_ENTRY = { 4: "заботу о теле и здоровье", 5: "общение и работу с людьми", 6: "труд и мастерство" };
+  var FIN_PLAIN_MISS = { 4: "заняться здоровьем и вести здоровый образ жизни", 5: "больше проявляться среди людей", 6: "больше трудиться" };
+
+  function financeSummary(fin) {
+    var lines = [];
+    if (fin.total === 0) lines.push("В роду были серьёзные потери денег — свой денежный поток придётся строить почти с нуля.");
+    else if (fin.total === 1) lines.push("Денежный поток слабый и неустойчивый: деньги даются большим трудом.");
+    else if (fin.total === 2) lines.push("Денежный поток устойчивый, но небольшой — чаще всего это средний достаток.");
+    else if (fin.total === 3) lines.push("Зарабатывать получается хорошо, но поток качает: то густо, то пусто.");
+    else if (fin.ideal) lines.push("Денежный поток полный и крепкий: деньги идут хорошо, можно делиться возможностями с другими.");
+    else if (fin.total === 4) lines.push("Денег хватает, но есть перекос: одна из опор канала пустует.");
+    else lines.push("Денежный поток перегружен и работает рывками — по силе это как пустой канал.");
+
+    if (fin.entries.length) {
+      lines.push("Легче всего деньги приходят через " + fin.entries.map(function (x) { return FIN_PLAIN_ENTRY[x.digit]; }).join("; ") + ".");
+    }
+    if (fin.missing.length) {
+      lines.push("Чтобы канал окреп, стоит " + fin.missing.map(function (x) { return FIN_PLAIN_MISS[x.digit]; }).join("; ") + ".");
+    }
+    return lines;
+  }
+
   function finItem(tag, part, hint, empty) {
     var row = document.createElement("div");
     row.className = "fin-item";
@@ -339,6 +367,17 @@ function gridCells(r) {
         m.appendChild(finItem("нет " + x.digit, x.part, x.hint, true));
       });
     }
+
+    var s = $("finSummary");
+    s.textContent = "";
+    var sh = document.createElement("h3");
+    sh.textContent = "Коротко";
+    s.appendChild(sh);
+    financeSummary(fin).forEach(function (line) {
+      var p = document.createElement("p");
+      p.textContent = line;
+      s.appendChild(p);
+    });
   }
 
   // Тот же разбор финансового канала в виде текста — для кнопки «Скопировать».
@@ -357,6 +396,7 @@ function gridCells(r) {
         out += "\n  нет " + x.digit + " (" + x.part + ") — " + x.hint;
       });
     }
+    out += "\n\nКоротко:\n" + financeSummary(fin).join("\n");
     return out;
   }
 

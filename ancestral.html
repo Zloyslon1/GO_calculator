@@ -16,6 +16,7 @@
     --soft: #e8f0ec;
     --warn-bg: #fff6df;
     --warn-ink: #6b5200;
+    --err: #b3261e;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -29,7 +30,23 @@
       --soft: #1f2d28;
       --warn-bg: #2d2610;
       --warn-ink: #f0d58a;
+      --err: #ff8a80;
+      color-scheme: dark;
     }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171c;
+    --card: #1d2128;
+    --ink: #eceff4;
+    --muted: #9aa3b2;
+    --line: #2b313b;
+    --accent: #6fb39d;
+    --accent-ink: #0f1a16;
+    --soft: #1f2d28;
+    --warn-bg: #2d2610;
+    --warn-ink: #f0d58a;
+    --err: #ff8a80;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
@@ -62,8 +79,7 @@
     margin-bottom: 14px;
   }
   input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  input[type=text].invalid, input[type=text].invalid:focus { outline-color: #b3261e; border-color: #b3261e; }
-  @media (prefers-color-scheme: dark) { input[type=text].invalid, input[type=text].invalid:focus { outline-color: #ff8a80; border-color: #ff8a80; } }
+  input[type=text].invalid, input[type=text].invalid:focus { outline-color: var(--err); border-color: var(--err); }
   button {
     font: inherit;
     font-weight: 600;
@@ -81,8 +97,7 @@
     border: 1px solid var(--line);
     margin-top: 10px;
   }
-  .error { color: #b3261e; margin: -6px 0 12px; font-size: 15px; min-height: 0; }
-  @media (prefers-color-scheme: dark) { .error { color: #ff8a80; } }
+  .error { color: var(--err); margin: -6px 0 12px; font-size: 15px; min-height: 0; }
   .who { font-weight: 600; font-size: 18px; margin: 0 0 2px; }
   .row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
   .row:last-of-type { border-bottom: 0; }

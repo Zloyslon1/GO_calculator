@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ансестологическая карта</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --card: #ffffff;
+    --ink: #1f2430;
+    --muted: #6b7280;
+    --line: #e2ded3;
+    --accent: #2f5d50;
+    --accent-ink: #ffffff;
+    --soft: #e8f0ec;
+    --warn-bg: #fff6df;
+    --warn-ink: #6b5200;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14171c;
+      --card: #1d2128;
+      --ink: #eceff4;
+      --muted: #9aa3b2;
+      --line: #2b313b;
+      --accent: #6fb39d;
+      --accent-ink: #0f1a16;
+      --soft: #1f2d28;
+      --warn-bg: #2d2610;
+      --warn-ink: #f0d58a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 520px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 22px; margin: 4px 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 18px; font-size: 15px; }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  label { display: block; font-size: 14px; color: var(--muted); margin: 0 0 6px; }
+  input[type=text] {
+    width: 100%;
+    font: inherit;
+    font-size: 18px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button {
+    font: inherit;
+    font-weight: 600;
+    width: 100%;
+    padding: 13px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    cursor: pointer;
+  }
+  button.ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--line);
+    margin-top: 10px;
+  }
+  .error { color: #b3261e; margin: -6px 0 12px; font-size: 15px; min-height: 0; }
+  @media (prefers-color-scheme: dark) { .error { color: #ff8a80; } }
+  .who { font-weight: 600; font-size: 18px; margin: 0 0 2px; }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .row:last-of-type { border-bottom: 0; }
+  .row b { font-variant-numeric: tabular-nums; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 12px 0 6px;
+  }
+  .cell {
+    background: var(--soft);
+    border-radius: 10px;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+    padding: 6px;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .cell.empty { color: var(--muted); }
+  .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; color: var(--muted); font-size: 13px; text-align: center; }
+  .note { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 12px; font-size: 15px; margin-top: 12px; }
+  .soon { color: var(--muted); font-size: 15px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Ансестологическая карта</h1>
+  <p class="sub">Работает без интернета. Всё считается прямо на телефоне.</p>
+
+  <form class="panel" id="form" autocomplete="off">
+    <label for="fio">ФИО (по желанию)</label>
+    <input type="text" id="fio" placeholder="Иванова Лариса Петровна" autocapitalize="words">
+
+    <label for="date">Дата рождения</label>
+    <input type="text" id="date" inputmode="numeric" placeholder="ДД.ММ.ГГГГ" maxlength="10">
+    <div class="error" id="err" role="alert" hidden></div>
+
+    <button type="submit">Рассчитать</button>
+  </form>
+
+  <section id="result" hidden>
+    <div class="panel">
+      <p class="who" id="rWho" hidden></p>
+      <div class="row"><span>Дата рождения</span><b id="rDate"></b></div>
+      <div class="row"><span>Рабочие числа</span><b id="rWork"></b></div>
+      <div class="row"><span>Число родового пути (ЧРП)</span><b id="rChrp"></b></div>
+    </div>
+
+    <div class="panel">
+      <h2>Карта</h2>
+      <div class="grid" id="grid"></div>
+      <div class="cols"><span>Восприятие</span><span>Деньги</span><span>Таланты</span></div>
+      <div class="note" id="n21" hidden>После 21 года к цифрам добавится по одной (кроме 5). Описывать карту нужно без них.</div>
+      <button class="ghost" type="button" id="copy">Скопировать результат</button>
+    </div>
+
+    <div class="panel">
+      <h2>Финансовый канал</h2>
+      <p class="soon">Пока не подключён: правила расчёта нужно взять из курса.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+// CALC-START
+// Расчёт ансестологической карты. Правила взяты из курса
+// «Метод родологических расчётов», модуль «Ансестологическая карта».
+function nonZeroDigits(n) {
+  return String(n).split("").filter(function (c) { return c !== "0"; }).map(Number);
+}
+function sum(xs) { return xs.reduce(function (a, b) { return a + b; }, 0); }
+function digitSum(n) { return sum(nonZeroDigits(n)); }
+// Один раз сложить цифры. 10, 11 и 12 остаются как есть.
+function reduceOnce(n) { return n < 10 ? n : digitSum(n); }
+// Складывать цифры, пока не останется одна.
+function reduceFull(n) { while (n >= 10) n = digitSum(n); return n; }
+
+function calc(day, month, year) {
+  if (year < 1800 || year > 2099) throw new Error("Год должен быть от 1800 до 2099");
+  var s = String(day).padStart(2, "0") + String(month).padStart(2, "0") + String(year);
+  var digits = nonZeroDigits(s);
+  var n1 = sum(digits);
+  var n2 = reduceOnce(n1);
+  var working, extraNine = false;
+  if (year >= 2000) {
+    var a3 = n1 + 19;
+    working = [n1, n2, 19, a3, reduceFull(a3)];
+    extraNine = year >= 2020;
+  } else if (year >= 1900) {
+    var b3 = n1 - 2 * digits[0];
+    var b4 = (b3 >= 10 && b3 <= 12) ? b3 : digitSum(b3);
+    working = [n1, n2, b3, b4];
+  } else {
+    var c3 = n2 + 9;
+    working = [n1, n2, 9, c3, reduceFull(c3)];
+  }
+  var counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  digits.forEach(function (d) { counts[d]++; });
+  working.forEach(function (w) { nonZeroDigits(w).forEach(function (d) { counts[d]++; }); });
+  if (extraNine) counts[9]++;
+  var at21 = null;
+  if (year >= 2000) {
+    at21 = counts.slice();
+    for (var d = 1; d <= 9; d++) if (d !== 5) at21[d]++;
+  }
+  return { working: working, chrp: n2, counts: counts, extraNine: extraNine, at21: at21 };
+}
+
+// Карта по строкам: 1 4 7 / 2 5 8 / 3 6 9
+function gridCells(r) {
+  var out = [];
+  for (var row = 0; row < 3; row++) {
+    for (var col = 0; col < 3; col++) {
+      var digit = col * 3 + row + 1;
+      var n = r.counts[digit];
+      var ch = String(digit);
+      var text;
+      if (n === 0) text = "-";
+      else if (r.extraNine && digit === 9) text = ch.repeat(n - 1) + " (" + ch + ")";
+      else text = ch.repeat(n);
+      out.push(text);
+    }
+  }
+  return out;
+}
+// CALC-END
+
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var dateEl = $("date");
+  var lastText = "";
+
+  // Подставляем точки при вводе: 01121983 -> 01.12.1983
+  dateEl.addEventListener("input", function () {
+    var v = dateEl.value.replace(/\D/g, "").slice(0, 8);
+    var out = v;
+    if (v.length > 4) out = v.slice(0, 2) + "." + v.slice(2, 4) + "." + v.slice(4);
+    else if (v.length > 2) out = v.slice(0, 2) + "." + v.slice(2);
+    dateEl.value = out;
+  });
+
+  function showError(msg) {
+    var e = $("err");
+    e.textContent = msg;
+    e.hidden = !msg;
+  }
+
+  $("form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    showError("");
+    var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(dateEl.value.trim());
+    if (!m) { showError("Введите дату в виде ДД.ММ.ГГГГ"); return; }
+    var day = +m[1], month = +m[2], year = +m[3];
+    var check = new Date(year, month - 1, day);
+    if (check.getFullYear() !== year || check.getMonth() !== month - 1 || check.getDate() !== day) {
+      showError("Такой даты не существует"); return;
+    }
+    var r;
+    try { r = calc(day, month, year); } catch (e) { showError(e.message); return; }
+
+    var fio = $("fio").value.trim();
+    var work = r.working.join(".");
+    var cells = gridCells(r);
+
+    $("rWho").textContent = fio;
+    $("rWho").hidden = !fio;
+    $("rDate").textContent = dateEl.value;
+    $("rWork").textContent = work;
+    $("rChrp").textContent = r.chrp;
+    $("n21").hidden = !r.at21;
+
+    var grid = $("grid");
+    grid.textContent = "";
+    cells.forEach(function (t) {
+      var d = document.createElement("div");
+      d.className = "cell" + (t === "-" ? " empty" : "");
+      d.textContent = t;
+      grid.appendChild(d);
+    });
+    $("result").hidden = false;
+
+    lastText = (fio ? fio + "\n" : "") + dateEl.value + "\n" + work + "\n" +
+      "ЧРП: " + r.chrp + "\n\n" +
+      [0, 1, 2].map(function (i) { return cells.slice(i * 3, i * 3 + 3).join("   "); }).join("\n");
+    $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  $("copy").addEventListener("click", function () {
+    var btn = $("copy");
+    function done() { btn.textContent = "Скопировано"; setTimeout(function () { btn.textContent = "Скопировать результат"; }, 1500); }
+    function fallback() {
+      var t = document.createElement("textarea");
+      t.value = lastText; document.body.appendChild(t); t.select();
+      try { document.execCommand("copy"); done(); } catch (e) { btn.textContent = "Не удалось скопировать"; }
+      document.body.removeChild(t);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(lastText).then(done, fallback);
+    } else { fallback(); }
+  });
+})();
+</script>
+</body>
+</html>

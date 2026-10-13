@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ансестологическая карта</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --card: #ffffff;
+    --ink: #1f2430;
+    --muted: #6b7280;
+    --line: #e2ded3;
+    --accent: #2f5d50;
+    --accent-ink: #ffffff;
+    --soft: #e8f0ec;
+    --warn-bg: #fff6df;
+    --warn-ink: #6b5200;
+    --err: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14171c;
+      --card: #1d2128;
+      --ink: #eceff4;
+      --muted: #9aa3b2;
+      --line: #2b313b;
+      --accent: #6fb39d;
+      --accent-ink: #0f1a16;
+      --soft: #1f2d28;
+      --warn-bg: #2d2610;
+      --warn-ink: #f0d58a;
+      --err: #ff8a80;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171c;
+    --card: #1d2128;
+    --ink: #eceff4;
+    --muted: #9aa3b2;
+    --line: #2b313b;
+    --accent: #6fb39d;
+    --accent-ink: #0f1a16;
+    --soft: #1f2d28;
+    --warn-bg: #2d2610;
+    --warn-ink: #f0d58a;
+    --err: #ff8a80;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 520px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 22px; margin: 4px 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 18px; font-size: 15px; }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  label { display: block; font-size: 14px; color: var(--muted); margin: 0 0 6px; }
+  input[type=text] {
+    width: 100%;
+    font: inherit;
+    font-size: 18px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  input[type=text].invalid, input[type=text].invalid:focus { outline-color: var(--err); border-color: var(--err); }
+  button {
+    font: inherit;
+    font-weight: 600;
+    width: 100%;
+    padding: 13px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    cursor: pointer;
+  }
+  button.ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--line);
+    margin-top: 10px;
+  }
+  .error { color: var(--err); margin: -6px 0 12px; font-size: 15px; min-height: 0; }
+  .who { font-weight: 600; font-size: 18px; margin: 0 0 2px; }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .row:last-of-type { border-bottom: 0; }
+  .row b { font-variant-numeric: tabular-nums; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 12px 0 6px;
+  }
+  .cell {
+    background: var(--soft);
+    border-radius: 10px;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+    padding: 6px;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .cell.empty { color: var(--muted); }
+  .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; color: var(--muted); font-size: 13px; text-align: center; }
+  .note { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 12px; font-size: 15px; margin-top: 12px; }
+  .soon { color: var(--muted); font-size: 15px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  .fin-sub { color: var(--muted); font-size: 14px; margin: 0 0 10px; }
+  .fin-model { background: var(--soft); border-radius: 10px; padding: 10px 12px; font-size: 15px; margin: 10px 0 4px; }
+  .fin-head { font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
+  .fin-item { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .fin-item:last-child { border-bottom: 0; }
+  .fin-tag {
+    flex: 0 0 auto; min-width: 42px; text-align: center;
+    background: var(--accent); color: var(--accent-ink);
+    border-radius: 8px; padding: 3px 8px; font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: 1px;
+  }
+  .fin-tag.empty { background: transparent; color: var(--muted); border: 1px dashed var(--line); letter-spacing: 0; }
+  .boot { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 12px 14px; font-size: 15px; margin: 0 0 14px; }
+  .fin-summary { border-left: 3px solid var(--accent); background: var(--soft); border-radius: 0 10px 10px 0; padding: 12px 14px; margin-top: 16px; }
+  .fin-summary h3 { font-size: 14px; margin: 0 0 6px; color: var(--accent); }
+  .fin-summary p { margin: 0 0 10px; font-size: 15px; line-height: 1.45; }
+  .fin-summary p:last-child { margin-bottom: 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Ансестологическая карта</h1>
+  <p class="sub">Работает без интернета. Всё считается прямо на телефоне.</p>
+
+  <!-- Виден, пока скрипт не запустился: если вы видите это сообщение, расчёт не работает. -->
+  <div class="boot" id="boot" role="alert">
+    Расчёт не запустился. Скорее всего, файл открыт во встроенном просмотрщике
+    (в мессенджере, в «Файлах» или в приложении), который не выполняет скрипты.
+    Откройте файл в обычном браузере — Chrome или Safari.
+  </div>
+  <script>
+  // Если в странице случится ошибка, показываем её текст на экране.
+  window.onerror = function (msg, src, line) {
+    var b = document.getElementById("boot");
+    if (b) {
+      b.hidden = false;
+      b.textContent = "Ошибка в странице: " + msg + (line ? " (строка " + line + ")" : "") +
+        ". Сделайте скриншот и пришлите его.";
+    }
+    return false;
+  };
+  </script>
+
+  <form class="panel" id="form" method="dialog" onsubmit="return false" autocomplete="off">
+    <label for="fio">ФИО (по желанию)</label>
+    <input type="text" id="fio" placeholder="Иванова Лариса Петровна" autocapitalize="words">
+
+    <label for="date">Дата рождения</label>
+    <input type="text" id="date" inputmode="numeric" placeholder="ДД.ММ.ГГГГ" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-describedby="err" aria-invalid="false">
+    <div class="error" id="err" role="alert" hidden></div>
+
+    <button type="submit">Рассчитать</button>
+  </form>
+
+  <section id="result" hidden>
+    <div class="panel">
+      <p class="who" id="rWho" hidden></p>
+      <div class="row"><span>Дата рождения</span><b id="rDate"></b></div>
+      <div class="row"><span>Рабочие числа</span><b id="rWork"></b></div>
+      <div class="row"><span>Число родового пути (ЧРП)</span><b id="rChrp"></b></div>
+    </div>
+
+    <div class="panel">
+      <h2>Карта</h2>
+      <div class="grid" id="grid"></div>
+      <div class="cols"><span>Восприятие</span><span>Деньги</span><span>Таланты</span></div>
+      <div class="note" id="n21" hidden>После 21 года к цифрам добавится по одной (кроме 5). Описывать карту нужно без них.</div>
+      <button class="ghost" type="button" id="copy">Скопировать результат</button>
+    </div>
+
+    <div class="panel" id="finPanel">
+      <h2>Финансовый канал</h2>
+      <p class="fin-sub">Столбец «Деньги» — цифры 4, 5, 6. Канал представляют домом: 4 — крыша, 5 — стены, 6 — фундамент.</p>
+      <div class="row"><span>Цифр в канале</span><b id="finTotal"></b></div>
+      <div class="row"><span>Модель канала</span><b id="finStable"></b></div>
+      <div class="row"><span>Влияние программ рода</span><b id="finLevel"></b></div>
+      <p class="fin-model" id="finModel"></p>
+      <div id="finEntries"></div>
+      <div id="finMissing"></div>
+      <div class="fin-summary" id="finSummary"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+// CALC-START
+// Расчёт ансестологической карты. Правила взяты из курса
+// «Метод родологических расчётов», модуль «Ансестологическая карта».
+function nonZeroDigits(n) {
+  return String(n).split("").filter(function (c) { return c !== "0"; }).map(Number);
+}
+function sum(xs) { return xs.reduce(function (a, b) { return a + b; }, 0); }
+function digitSum(n) { return sum(nonZeroDigits(n)); }
+// Один раз сложить цифры. 10, 11 и 12 остаются как есть.
+function reduceOnce(n) { return n < 10 ? n : digitSum(n); }
+// Складывать цифры, пока не останется одна.
+function reduceFull(n) { while (n >= 10) n = digitSum(n); return n; }
+
+function calc(day, month, year) {
+  if (year < 1800 || year > 2099) throw new Error("Год должен быть от 1800 до 2099");
+  var s = String(day).padStart(2, "0") + String(month).padStart(2, "0") + String(year);
+  var digits = nonZeroDigits(s);
+  var n1 = sum(digits);
+  var n2 = reduceOnce(n1);
+  var working, extraNine = false;
+  if (year >= 2000) {
+    var a3 = n1 + 19;
+    working = [n1, n2, 19, a3, reduceFull(a3)];
+    extraNine = year >= 2020;
+  } else if (year >= 1900) {
+    var b3 = n1 - 2 * digits[0];
+    var b4 = (b3 >= 10 && b3 <= 12) ? b3 : digitSum(b3);
+    working = [n1, n2, b3, b4];
+  } else {
+    var c3 = n2 + 9;
+    working = [n1, n2, 9, c3, reduceFull(c3)];
+  }
+  var counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  digits.forEach(function (d) { counts[d]++; });
+  working.forEach(function (w) { nonZeroDigits(w).forEach(function (d) { counts[d]++; }); });
+  if (extraNine) counts[9]++;
+  var at21 = null;
+  if (year >= 2000) {
+    at21 = counts.slice();
+    for (var d = 1; d <= 9; d++) if (d !== 5) at21[d]++;
+  }
+  return { working: working, chrp: n2, counts: counts, extraNine: extraNine, at21: at21 };
+}
+
+// Финансовый канал — цифры 4, 5, 6 (столбец «Деньги»). Правила из модуля 3,
+// урок «Родовой финансовый канал». 4 — крыша, 5 — стены, 6 — фундамент.
+// Сила и устойчивость зависят от того, сколько всего цифр 4, 5, 6 в карте,
+// точки входа — от того, какие ячейки заполнены. Считается только по дате.
+var FIN_PART = { 4: "крыша", 5: "стены", 6: "фундамент" };
+var FIN_ENTRY = {
+  4: "тело и физические возможности: спорт, бьюти, телесные практики, медитации",
+  5: "общение и сообщество: торговля, посредничество, право, блогерство",
+  6: "труд и мастерство: экспертиза, работа с ресурсами, бухгалтерия"
+};
+var FIN_MISSING = {
+  4: "заняться физическим и ментальным здоровьем: ЗОЖ, лёгкие нагрузки, медитации",
+  5: "проявляться в социуме: сообщество, общение, блогерство",
+  6: "больше трудиться"
+};
+function finance(counts) {
+  var c4 = counts[4], c5 = counts[5], c6 = counts[6];
+  var total = c4 + c5 + c6;
+  var all = c4 > 0 && c5 > 0 && c6 > 0;
+  var entries = [], missing = [];
+  [4, 5, 6].forEach(function (d) {
+    if (counts[d] > 0) entries.push({ digit: d, count: counts[d], part: FIN_PART[d], hint: FIN_ENTRY[d] });
+    else missing.push({ digit: d, part: FIN_PART[d], hint: FIN_MISSING[d] });
+  });
+  var stable = total === 2 || total === 4;
+  var ideal = total === 4 && all;
+  var level = total === 4 ? (ideal ? 0 : 1) : total === 3 ? 1 : total === 2 ? 2 : 3;
+  var model;
+  if (total === 0) model = "Пустой финансовый канал: деньги даются тяжело, их нужно нарабатывать";
+  else if (total === 1) model = "Очень слабый, неустойчивый канал: нужен постоянный «допинг» и много усилий";
+  else if (total === 2) model = "Устойчивый, но слабый канал: средний достаток";
+  else if (total === 3) model = "Неустойчивый канал («заработал — потерял»), но человек хорошо зарабатывает";
+  else if (ideal) model = "Идеальный, донорский канал: устойчивый и полный";
+  else if (total === 4) model = "Четыре цифры, но с перекосом: одна из ячеек пустует";
+  else model = "Перегруженный канал: считается как пустой";
+  return { c4: c4, c5: c5, c6: c6, total: total, stable: stable, ideal: ideal, level: level, model: model, entries: entries, missing: missing };
+}
+
+// Карта по строкам: 1 4 7 / 2 5 8 / 3 6 9
+function gridCells(r) {
+  var out = [];
+  for (var row = 0; row < 3; row++) {
+    for (var col = 0; col < 3; col++) {
+      var digit = col * 3 + row + 1;
+      var n = r.counts[digit];
+      var ch = String(digit);
+      var text;
+      if (n === 0) text = "-";
+      else if (r.extraNine && digit === 9) text = ch.repeat(n - 1) + " (" + ch + ")";
+      else text = ch.repeat(n);
+      out.push(text);
+    }
+  }
+  return out;
+}
+
+// Разбор того, что набрано в поле даты. Понимает просто цифры (27012000),
+// точки, слэши, дефисы и пробелы, а также дату с годом впереди (2000-01-27).
+// Возвращает:
+//   text     — дата с точками: 27.01.2000 (день 4–9 и месяц 2–9 дополняются нулём);
+//   pos[k]   — место курсора в text после k-й набранной цифры;
+//   day, month, year — числа, когда дата введена целиком;
+//   complete — дата введена целиком и такая дата существует;
+//   error    — понятное сообщение, если уже видно, что дата неверная ("" если всё в порядке).
+function parseDateInput(raw) {
+  var s = String(raw);
+  var iso = /^\s*(\d{4})\D+(\d{1,2})\D+(\d{1,2})\s*$/.exec(s);
+  if (iso) s = ("0" + iso[3]).slice(-2) + ("0" + iso[2]).slice(-2) + iso[1];
+  var d = s.replace(/\D/g, "");
+
+  var out = "", pos = [0], i = 0;
+  var groups = ["", "", ""];
+  // Берёт из набранных цифр день или месяц: first — наибольшая первая цифра без нуля.
+  function take(idx, firstMax) {
+    if (i >= d.length) return false;
+    var a = d.charAt(i);
+    if (+a > firstMax) {
+      groups[idx] = "0" + a; out += "0" + a; i += 1; pos[i] = out.length;
+    } else if (i + 1 < d.length) {
+      groups[idx] = a + d.charAt(i + 1); out += groups[idx];
+      pos[i + 1] = out.length - 1; i += 2; pos[i] = out.length;
+    } else {
+      groups[idx] = a; out += a; i += 1; pos[i] = out.length;
+      return false;
+    }
+    return true;
+  }
+  if (take(0, 3) && i < d.length) {
+    out += ".";
+    if (take(1, 1) && i < d.length) {
+      out += ".";
+      groups[2] = d.slice(i, i + 4);
+      for (var k = 0; k < groups[2].length; k++) { out += groups[2].charAt(k); pos[i + 1] = out.length; i += 1; }
+    }
+  }
+
+  var res = { text: out, pos: pos, day: 0, month: 0, year: 0, complete: false, error: "" };
+  var ds = groups[0], ms = groups[1], ys = groups[2];
+  if (ds.length === 2 && (+ds < 1 || +ds > 31)) { res.error = "День — от 01 до 31"; return res; }
+  if (ms.length === 2 && (+ms < 1 || +ms > 12)) { res.error = "Месяц — от 01 до 12"; return res; }
+  if (ys.length > 0) {
+    var scale = Math.pow(10, 4 - ys.length), lo = +ys * scale, hi = lo + scale - 1;
+    if (hi < 1800 || lo > 2099) { res.error = "Год — от 1800 до 2099"; return res; }
+  }
+  var maxDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (ds.length === 2 && ms.length === 2 && +ds > maxDays[+ms - 1]) { res.error = "Такой даты не существует"; return res; }
+  if (ds.length === 2 && ms.length === 2 && ys.length === 4) {
+    var dt = new Date(+ys, +ms - 1, +ds);
+    if (dt.getFullYear() !== +ys || dt.getMonth() !== +ms - 1 || dt.getDate() !== +ds) {
+      res.error = "Такой даты не существует"; return res;
+    }
+    res.day = +ds; res.month = +ms; res.year = +ys; res.complete = true;
+  }
+  return res;
+}
+// Объяснение финансового канала простыми словами. Тексты опираются на материалы
+// курса (модуль 3, «Родовой финансовый канал» и «Точки входа в финансовый канал»).
+// Возвращает абзацы вида { h: "Заголовок.", t: "Текст." }.
+var FIN_FLOW = {
+  0: "Пустой канал. Деньги здесь даются тяжело, и чтобы поток заработал, придётся много трудиться. Хорошая новость: через работу с родом канал можно наполнить.",
+  1: "Одна цифра на весь канал, поэтому поток очень слабый и работает рывками. Ему нужна постоянная подпитка, а заработать получается только с большими усилиями.",
+  2: "Две цифры: канал устойчивый, но слабый. Знакомая история: денег хочется всегда, а достойно заработать не получается. Обычно это средний достаток.",
+  3: "Три цифры: зарабатывать человек умеет и делает это хорошо, но поток качается: заработал, потерял, снова заработал. Конструкция неустойчивая, зато её можно укрепить через точки входа.",
+  4: "Четыре цифры, и заняты все три ячейки. Это идеальный «донорский» канал: деньги идут ритмично, а денежных перекосов в роду нет. Через такого человека деньги приходят и к друзьям, и к ученикам.",
+  41: "Четыре цифры, но одна из ячеек пустует, поэтому до идеала не хватает одной опоры. Поток почти ровный, но в роду есть свои денежные программы.",
+  5: "Пять цифр и больше: канал перегружен и работает неритмично. По силе он как пустой: за этим стоит программа ухода от денег, и ему нужна постоянная денежная проработка."
+};
+
+var FIN_ROD = {
+  0: "В роду нет сильных денежных программ. Это хорошая основа: главное, пользоваться ею и не растерять.",
+  1: "Денежная программа в роду есть, но слабая: когда-то род пережил безденежье, оплакал потери и смирился. Обычно хватает небольшой проработки: сменить убеждения и «перепрошить» мышление.",
+  2: "Нездоровый опыт с деньгами повторялся в роду не в одном поколении: что-то предки переработали, а что-то передали дальше. Человек старается, но упирается в «стену». Просто сменить мышление мало: нужно найти причину в роду и проработать её.",
+  3: "Это самая сильная программа. В роду, скорее всего, были крупные потери денег и статуса, после которых род так и не восстановился. Желание больших денег есть, но его перебивает страх провала. Сами с этим обычно не справиться: нужна помощь ансестолога."
+};
+
+// Точки входа для готовых сочетаний цифр 4, 5, 6 (ключ — цифры по порядку).
+var FIN_COMBO = {
+  "4": "Через тело и физические возможности: бьюти, телесные практики, медитации.",
+  "5": "Через общение с миром и людьми: торговля, право, посреднические услуги (риелторы, чиновники).",
+  "6": "Через труд. Здесь нужно быть трудоголиком: деньги приходят через усердие и дополнительную работу.",
+  "44": "Через тело: ветеринары, остеопаты, мастера телесных практик.",
+  "55": "Через общение и закон: адвокатура, создание сообществ, объединение людей и свой бизнес через общение.",
+  "66": "Через мастерство и экспертизу. Стоит выбрать одну сферу и расти в ней вширь, чтобы стать самым востребованным специалистом. Такие люди хорошо обращаются с деньгами и ресурсами, например в бухгалтерии.",
+  "444": "Через силу мысли: такие люди меняют мир своими идеями. Они могут помогать другим, но не себе.",
+  "555": "Через воспитание и правила: школы, надзорные органы, законотворчество, цифровые тренды, в том числе криптовалюта.",
+  "666": "Через работу с финансами: консультант по управлению деньгами. Три цифры дают нестабильность, поэтому стоит стабилизироваться через сообщество людей или заботу о здоровье.",
+  "4444": "Возможностей много, но человек не видит своего потенциала. Ему важно, чтобы кто-то помог его раскрыть, тогда канал улучшится и для него, и для других.",
+  "5555": "Устойчивости много, но ресурсы не реализованы. Такие люди часто идут в бизнес, где работают с людьми.",
+  "6666": "Большие возможности управлять ресурсами, вкладываться в инвестиции и работать с неосязаемыми вещами. Род у таких людей богатый.",
+  "66666": "Вход в дополнительные ресурсы, экспертизу, управление природными и другими ресурсами.",
+  "466": "Через мастерство. Четвёрка работает как дополнительный ресурс: спорт, природные ресурсы, бизнес. Конструкция неустойчивая, поэтому важно следить за здоровьем или ещё сильнее расти в экспертизе.",
+  "446": "Телесная точка входа: телесные практики, мануальные специалисты. Для трёх цифр действует правило: стоит развивать то, чего не хватает, например общение и команду.",
+  "566": "Таким людям важно вкладываться в своё здоровье и связь с телом.",
+  "455": "Придётся компенсировать трудом: дополнительной работой. Нужно много усилий, чтобы канал стал четырёхцифровым и устойчивым, а модель для рода придётся создавать новую.",
+  "4466": "Мастерство, отдача людям, миру, спорту. Это редкая комбинация."
+};
+var FIN_ENTRY_PLAIN = {
+  4: "тело и здоровье: бьюти, телесные практики, медитации",
+  5: "общение и сообщество: торговля, право, посредничество",
+  6: "труд и мастерство: экспертиза, работа с ресурсами"
+};
+var FIN_MISS_PLAIN = {
+  4: "Нет 4 («крыша»): трудно сохранить деньги к старости и вложить их грамотно. Нужно заняться здоровьем тела и головы: здоровый образ жизни, лёгкая физкультура (не профессиональный спорт), медитации, саморазвитие.",
+  5: "Нет 5 («стены»): сложно удерживать деньги и приумножать доходы. Нужно проявляться среди людей: сообщества, общение, даже свой блог.",
+  6: "Нет 6 («фундамент»): в роду есть программы потери денег. Нужно больше трудиться: именно труд закладывает этот фундамент."
+};
+
+function financeSummary(fin) {
+  var out = [];
+  var flowKey = fin.total >= 5 ? 5 : (fin.total === 4 && !fin.ideal ? 41 : fin.total);
+  out.push({ h: "Что за поток.", t: FIN_FLOW[flowKey] });
+  out.push({ h: "Что это говорит о роде.", t: FIN_ROD[fin.level] });
+
+  if (fin.entries.length) {
+    var key = "";
+    [4, 5, 6].forEach(function (d) { var n = d === 4 ? fin.c4 : d === 5 ? fin.c5 : fin.c6; for (var i = 0; i < n; i++) key += d; });
+    if (!FIN_COMBO[key] && fin.c4 === 0 && fin.c5 === 0 && fin.c6 >= 5) key = "66666";
+    var text = FIN_COMBO[key];
+    if (!text) {
+      text = "Деньги легче всего идут через " +
+        fin.entries.map(function (x) { return FIN_ENTRY_PLAIN[x.digit]; }).join("; ") + ".";
+    }
+    out.push({ h: "Где деньги идут легче всего.", t: text });
+  }
+
+  if (fin.total === 0) {
+    out.push({ h: "Что нарабатывать.", t: "Все три опоры пустые, поэтому нарабатывать нужно сразу всё: здоровье тела (4), общение с людьми (5) и труд (6)." });
+  } else if (fin.missing.length) {
+    out.push({ h: "Чего не хватает.", t: fin.missing.map(function (x) { return FIN_MISS_PLAIN[x.digit]; }).join(" ") });
+  }
+
+  out.push({ h: "Про родителей.", t: "Стоит посмотреть и финансовые каналы родителей: по ним видно, откуда идут денежные программы. Если у родителей канал слабее, чем здесь, значит, в роду были потери денег, и нужна финансовая проработка: привычки родителей с деньгами напрямую отражаются на потомке." });
+  return out;
+}
+// CALC-END
+
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var dateEl = $("date");
+  var lastText = "";
+
+  function showError(msg) {
+    var e = $("err");
+    e.textContent = msg;
+    e.hidden = !msg;
+    dateEl.classList.toggle("invalid", !!msg);
+    dateEl.setAttribute("aria-invalid", msg ? "true" : "false");
+  }
+
+  function setCaret(at) {
+    try { dateEl.setSelectionRange(at, at); } catch (e) {}
+  }
+
+  // Ставим точки и проверяем дату прямо при вводе: 27012000 -> 27.01.2000.
+  // Поле переписываем только если текст действительно изменился, иначе на
+  // некоторых телефонах клавиатура сбрасывает набор или уводит курсор.
+  dateEl.addEventListener("input", function () {
+    var raw = dateEl.value;
+    var caret = dateEl.selectionStart;
+    var p = parseDateInput(raw);
+    if (p.text !== raw) {
+      var atEnd = caret == null || caret >= raw.length;
+      var k = atEnd ? 0 : raw.slice(0, caret).replace(/\D/g, "").length;
+      var at = atEnd ? p.text.length : p.pos[Math.min(k, p.pos.length - 1)];
+      dateEl.value = p.text;
+      if (document.activeElement === dateEl) {
+        setCaret(at);
+        // Для клавиатур Android: повторяем, но только если поле с тех пор не менялось.
+        setTimeout(function () { if (dateEl.value === p.text) setCaret(at); }, 0);
+      }
+    }
+    showError(p.error);
+  });
+
+  var FIN_LEVEL = { 0: "негативной программы нет", 1: "наименьшее", 2: "среднее", 3: "высокое" };
+
+  function finItem(tag, part, hint, empty) {
+    var row = document.createElement("div");
+    row.className = "fin-item";
+    var t = document.createElement("span");
+    t.className = "fin-tag" + (empty ? " empty" : "");
+    t.textContent = tag;
+    var txt = document.createElement("span");
+    var b = document.createElement("b");
+    b.textContent = part;
+    txt.appendChild(b);
+    txt.appendChild(document.createTextNode(" — " + hint));
+    row.appendChild(t);
+    row.appendChild(txt);
+    return row;
+  }
+
+  function renderFinance(fin) {
+    $("finTotal").textContent = fin.total + " (4×" + fin.c4 + ", 5×" + fin.c5 + ", 6×" + fin.c6 + ")";
+    $("finStable").textContent = fin.stable ? "устойчивая" : "неустойчивая";
+    $("finLevel").textContent = FIN_LEVEL[fin.level];
+    $("finModel").textContent = fin.model;
+
+    var e = $("finEntries");
+    e.textContent = "";
+    if (fin.entries.length) {
+      var h = document.createElement("div");
+      h.className = "fin-head";
+      h.textContent = "Точки входа (" + fin.entries.length + ") — через что легче приходят деньги:";
+      e.appendChild(h);
+      fin.entries.forEach(function (x) {
+        e.appendChild(finItem(String(x.digit).repeat(x.count), x.part, x.hint, false));
+      });
+    }
+
+    var m = $("finMissing");
+    m.textContent = "";
+    if (fin.missing.length) {
+      var h2 = document.createElement("div");
+      h2.className = "fin-head";
+      h2.textContent = "Чего не хватает — что нарабатывать:";
+      m.appendChild(h2);
+      fin.missing.forEach(function (x) {
+        m.appendChild(finItem("нет " + x.digit, x.part, x.hint, true));
+      });
+    }
+
+    var s = $("finSummary");
+    s.textContent = "";
+    var sh = document.createElement("h3");
+    sh.textContent = "Коротко";
+    s.appendChild(sh);
+    financeSummary(fin).forEach(function (para) {
+      var p = document.createElement("p");
+      var b = document.createElement("b");
+      b.textContent = para.h;
+      p.appendChild(b);
+      p.appendChild(document.createTextNode(" " + para.t));
+      s.appendChild(p);
+    });
+  }
+
+  // Тот же разбор финансового канала в виде текста — для кнопки «Скопировать».
+  function financeText(fin) {
+    var out = "Финансовый канал (4,5,6): " + fin.total + " цифр(ы) — " +
+      (fin.stable ? "устойчивый" : "неустойчивый") + "\n" + fin.model;
+    if (fin.entries.length) {
+      out += "\nТочки входа:";
+      fin.entries.forEach(function (x) {
+        out += "\n  " + String(x.digit).repeat(x.count) + " (" + x.part + ") — " + x.hint;
+      });
+    }
+    if (fin.missing.length) {
+      out += "\nНарабатывать:";
+      fin.missing.forEach(function (x) {
+        out += "\n  нет " + x.digit + " (" + x.part + ") — " + x.hint;
+      });
+    }
+    out += "\n\nКоротко:\n" + financeSummary(fin).map(function (x) { return x.h + " " + x.t; }).join("\n");
+    return out;
+  }
+
+  $("form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    showError("");
+    var p = parseDateInput(dateEl.value);
+    if (p.error) { showError(p.error); return; }
+    if (!p.complete) { showError("Введите дату полностью: ДД.ММ.ГГГГ"); return; }
+    if (dateEl.value !== p.text) dateEl.value = p.text;
+    var day = p.day, month = p.month, year = p.year;
+    var r;
+    try { r = calc(day, month, year); } catch (e) { showError(e.message); return; }
+
+    var fio = $("fio").value.trim();
+    var work = r.working.join(".");
+    var cells = gridCells(r);
+
+    $("rWho").textContent = fio;
+    $("rWho").hidden = !fio;
+    $("rDate").textContent = dateEl.value;
+    $("rWork").textContent = work;
+    $("rChrp").textContent = r.chrp;
+    $("n21").hidden = !r.at21;
+
+    var grid = $("grid");
+    grid.textContent = "";
+    cells.forEach(function (t) {
+      var d = document.createElement("div");
+      d.className = "cell" + (t === "-" ? " empty" : "");
+      d.textContent = t;
+      grid.appendChild(d);
+    });
+
+    var fin = finance(r.counts);
+    renderFinance(fin);
+    $("result").hidden = false;
+
+    lastText = (fio ? fio + "\n" : "") + dateEl.value + "\n" + work + "\n" +
+      "ЧРП: " + r.chrp + "\n\n" +
+      [0, 1, 2].map(function (i) { return cells.slice(i * 3, i * 3 + 3).join("   "); }).join("\n") +
+      "\n\n" + financeText(fin);
+    $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  $("copy").addEventListener("click", function () {
+    var btn = $("copy");
+    function done() { btn.textContent = "Скопировано"; setTimeout(function () { btn.textContent = "Скопировать результат"; }, 1500); }
+    function fallback() {
+      var t = document.createElement("textarea");
+      t.value = lastText; document.body.appendChild(t); t.select();
+      try { document.execCommand("copy"); done(); } catch (e) { btn.textContent = "Не удалось скопировать"; }
+      document.body.removeChild(t);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(lastText).then(done, fallback);
+    } else { fallback(); }
+  });
+
+  // Дошли до конца — значит, скрипт работает: убираем предупреждение.
+  $("boot").hidden = true;
+})();
+</script>
+</body>
+</html>
